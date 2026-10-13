@@ -1,0 +1,7 @@
+weave>=0.53
+openai-agents>=0.23
+openai>=2.0
+cwsandbox[wandb]>=1.10.0
+datasets>=3.0
+python-dotenv>=1.0
+openpyxl>=3.1
