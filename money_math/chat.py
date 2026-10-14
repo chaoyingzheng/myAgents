@@ -5,6 +5,7 @@
 Memory: an Agents SDK SQLiteSession stores the conversation history, so
 "what if I pay $500 extra?" reuses the loan details from the previous turn.
 All turns are grouped as one conversation in the Weave Agents view (group_id).
+Long chats: context.py compacts old turns and enforces a token budget (see there).
 """
 
 import argparse
@@ -23,14 +24,18 @@ async def main():
 
     init_weave()
     from agents import Runner, SQLiteSession, trace
+    from agents.exceptions import AgentsException
+    from openai import APIError
 
     from .agents_def import SANDBOX_PACKAGES, build_agent
+    from .context import chat_run_config
     from .sandbox_tool import SandboxSession
 
     session_id = args.session or f"chat-{uuid.uuid4().hex[:8]}"
     memory = SQLiteSession(session_id, "conversations.db")
     agent = build_agent(args.version, args.model, interactive=True)
     sandbox = SandboxSession(packages=SANDBOX_PACKAGES.get(args.version, ()))
+    run_config = chat_run_config()
 
     print(f"Money Math ({args.version}) | session {session_id} | type 'exit' to quit\n")
     try:
@@ -40,8 +45,15 @@ async def main():
                 break
             if not q:
                 continue
-            with trace("money_math_chat", group_id=session_id, metadata={"version": args.version}):
-                result = await Runner.run(agent, q, session=memory, context=sandbox, max_turns=12)
+            try:
+                with trace("money_math_chat", group_id=session_id, metadata={"version": args.version}):
+                    result = await Runner.run(
+                        agent, q, session=memory, context=sandbox, max_turns=12, run_config=run_config
+                    )
+            except (AgentsException, APIError) as e:
+                # One failed turn (timeout, context overflow, max turns) shouldn't end the chat.
+                print(f"\nagent> Sorry, I couldn't answer that ({type(e).__name__}). Please try again.\n")
+                continue
             print(f"\nagent> {result.final_output}\n")
     finally:
         await sandbox.close()

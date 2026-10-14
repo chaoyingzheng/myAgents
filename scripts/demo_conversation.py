@@ -31,6 +31,7 @@ async def main():
     from agents import Runner, SQLiteSession, trace
 
     from money_math.agents_def import SANDBOX_PACKAGES, build_agent
+    from money_math.context import chat_run_config
     from money_math.sandbox_tool import SandboxSession
 
     session_id = f"demo-{uuid.uuid4().hex[:8]}"
@@ -41,7 +42,7 @@ async def main():
         for q in TURNS:
             print(f"\nyou> {q}")
             with trace("money_math_chat", group_id=session_id, metadata={"version": args.version}):
-                result = await Runner.run(agent, q, session=memory, context=sandbox, max_turns=12)
+                result = await Runner.run(agent, q, session=memory, context=sandbox, max_turns=12, run_config=chat_run_config())
             print(f"agent> {result.final_output}")
         print(
             f"\n[sandbox] cold start {sandbox.cold_start_seconds or 0:.1f}s, "

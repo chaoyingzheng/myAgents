@@ -115,6 +115,10 @@ python scripts/inspect_turn.py --n 2              # print the latest agent turns
 python -m evals.judge_alignment                   # LLM ambiguity judge vs human labels (Weave Evaluation, Cohen's kappa)
 python scripts/rescore.py [--apply]               # re-score saved answers with the current numeric_match version
 python scripts/rejudge_flags.py                   # re-judge "did the reply flag an ambiguity?" vs human labels (logs to Weave)
+
+# 5) Long conversations: one 20-turn chat per context mode (full_history / compact / tight_budget)
+python -m evals.long_conversation --dry-run       # turns + expected answers, no agent calls
+python -m evals.long_conversation --model openai/gpt-oss-120b
 ```
 
 Tip: point `WEAVE_PROJECT` at a fresh project when reproducing, so your runs don't mix with existing results.
@@ -129,6 +133,7 @@ money_math/
   sandbox_tool.py    run_python tool: per-conversation sandbox, exec timeout, stderr feedback, no-number guard
   agents_def.py      v1–v4 agent definitions, prompts, model-aware tool_choice
   chat.py            interactive CLI with SQLiteSession memory
+  context.py         long-chat context management: compact old turns + token budget
 evals/
   build_dataset.py   FinanceReasoning-Hard + GSM-Symbolic-P2 sample -> weave.Dataset
   add_human_labels.py  human ambiguity labels (docs/ambiguity_review.xlsx) -> new dataset version
@@ -136,6 +141,7 @@ evals/
                      judge_question_ambiguity + flags_ambiguity (LLM judges)
   run_eval.py        weave.Model wrapper + weave.Evaluation per version, --parallel, --limit
   judge_alignment.py LLM judge vs human labels, as a Weave Evaluation
+  long_conversation.py  20-turn chat eval of context management (accuracy by turn kind, token growth)
   finance_questions.py  hand-written questions from dataset v1 (retired, kept for reference)
 scripts/             smoke_test, demo_conversation, eval_report, alt_metric, inspect_turn,
                      rescore (re-score saved answers), rejudge_flags (re-judge saved answers)
